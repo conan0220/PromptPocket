@@ -2,12 +2,6 @@
 
 這個專案用本機的 `Qwen3.5-9B-Q4_K_M.gguf` 模型搭配 `llama.cpp` 執行推論。
 
-目前模型檔位置：
-
-```text
-./models/Qwen3.5-9B-Q4_K_M.gguf
-```
-
 ## Quick Start
 
 ### 1. 安裝 llama.
