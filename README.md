@@ -63,13 +63,7 @@ python -m pip install openai PySide6 keyboard pyperclip pywin32 huggingface_hub 
 
 ### 5. 下載模型
 
-先安裝 Hugging Face CLI 後，下載模型到 `./models`：
-
-```powershell
-python -m hf download unsloth/Qwen3.5-9B-GGUF --include "Qwen3.5-9B-Q4_K_M.gguf" --local-dir ./models
-```
-
-如果你的環境已經能直接用 `hf` 指令，也可以這樣：
+下載模型到 `./models`：
 
 ```powershell
 hf download unsloth/Qwen3.5-9B-GGUF --include "Qwen3.5-9B-Q4_K_M.gguf" --local-dir ./models
