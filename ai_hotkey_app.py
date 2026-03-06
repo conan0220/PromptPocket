@@ -145,7 +145,7 @@ class PromptWindow(QMainWindow):
         )
 
         self.generate_button = QPushButton("生成 (Enter)")
-        self.paste_button = QPushButton("貼上")
+        self.paste_button = QPushButton("貼上 (Ctrl+Tab)")
         self.close_button = QPushButton("隱藏 (Ctrl+Space)")
 
         self.generate_button.clicked.connect(self.on_generate_clicked)
@@ -173,12 +173,21 @@ class PromptWindow(QMainWindow):
 
     def eventFilter(self, watched, event) -> bool:  # noqa: N802
         if watched is self.prompt_input and event.type() == event.Type.KeyPress:
+            if event.key() == Qt.Key_Tab and event.modifiers() & Qt.ControlModifier:
+                self.on_paste_clicked()
+                return True
             if event.key() in (Qt.Key_Return, Qt.Key_Enter):
                 if event.modifiers() & Qt.ShiftModifier:
                     return False
                 self.on_generate_clicked()
                 return True
         return super().eventFilter(watched, event)
+
+    def keyPressEvent(self, event) -> None:  # noqa: N802
+        if event.key() == Qt.Key_Tab and event.modifiers() & Qt.ControlModifier:
+            self.on_paste_clicked()
+            return
+        super().keyPressEvent(event)
 
     @Slot()
     def show_prompt_window(self) -> None:
@@ -317,4 +326,7 @@ def main(config: AppConfig | None = None, show_on_start: bool = True) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+
 
