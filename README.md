@@ -1,4 +1,4 @@
-# local_ai
+# PromptPocket
 
 這個專案用本機的 `Qwen3.5-9B-Q4_K_M.gguf` 模型搭配 `llama.cpp` 執行推論。
 
