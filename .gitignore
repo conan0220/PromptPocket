@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+
+# Runtime state
+.runtime/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Model files and caches
+models/
