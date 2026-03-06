@@ -1,4 +1,4 @@
-import threading
+﻿import threading
 import time
 from dataclasses import dataclass
 import sys
@@ -55,7 +55,6 @@ SYSTEM_PROMPT = """你是一個只輸出最終結果的助手。
 改為輸出最短、最合理、最可直接使用的結果。"""
 
 
-
 @dataclass
 class AppConfig:
     base_url: str = "http://localhost:8080/v1"
@@ -104,6 +103,7 @@ class LlmWorker(QObject):
 
 class PromptWindow(QMainWindow):
     request_show = Signal()
+    request_toggle = Signal()
 
     def __init__(self, config: AppConfig):
         super().__init__()
@@ -122,12 +122,14 @@ class PromptWindow(QMainWindow):
         )
         self.resize(760, 560)
         self.request_show.connect(self.show_prompt_window)
+        self.request_toggle.connect(self.toggle_prompt_window)
 
         self.prompt_input = QTextEdit()
         self.prompt_input.setPlaceholderText(
             "輸入你的需求，例如：我想要知道目前的路徑下有哪些檔案(powershell)"
         )
         self.prompt_input.setFixedHeight(110)
+        self.prompt_input.installEventFilter(self)
 
         self.output_view = QTextEdit()
         self.output_view.setReadOnly(True)
@@ -142,9 +144,9 @@ class PromptWindow(QMainWindow):
             f"快捷鍵: {self.config.hotkey} | 模型: {self.config.model}"
         )
 
-        self.generate_button = QPushButton("生成")
+        self.generate_button = QPushButton("生成 (Enter)")
         self.paste_button = QPushButton("貼上")
-        self.close_button = QPushButton("離開")
+        self.close_button = QPushButton("隱藏 (Ctrl+Space)")
 
         self.generate_button.clicked.connect(self.on_generate_clicked)
         self.paste_button.clicked.connect(self.on_paste_clicked)
@@ -169,16 +171,14 @@ class PromptWindow(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
-    def keyPressEvent(self, event) -> None:  # noqa: N802
-        if event.key() == Qt.Key_Escape:
-            self.hide()
-            return
-        if event.key() in (Qt.Key_Return, Qt.Key_Enter) and (
-            event.modifiers() & Qt.ControlModifier
-        ):
-            self.on_generate_clicked()
-            return
-        super().keyPressEvent(event)
+    def eventFilter(self, watched, event) -> bool:  # noqa: N802
+        if watched is self.prompt_input and event.type() == event.Type.KeyPress:
+            if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+                if event.modifiers() & Qt.ShiftModifier:
+                    return False
+                self.on_generate_clicked()
+                return True
+        return super().eventFilter(watched, event)
 
     @Slot()
     def show_prompt_window(self) -> None:
@@ -191,6 +191,13 @@ class PromptWindow(QMainWindow):
         self.activateWindow()
         self.prompt_input.setFocus()
         self.prompt_input.selectAll()
+
+    @Slot()
+    def toggle_prompt_window(self) -> None:
+        if self.isVisible():
+            self.hide()
+            return
+        self.show_prompt_window()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         event.ignore()
@@ -291,7 +298,7 @@ class PromptWindow(QMainWindow):
 
 def register_hotkey(window: PromptWindow, hotkey: str) -> None:
     def callback() -> None:
-        window.request_show.emit()
+        window.request_toggle.emit()
 
     keyboard.add_hotkey(hotkey, callback, suppress=False)
 
@@ -310,3 +317,4 @@ def main(config: AppConfig | None = None, show_on_start: bool = True) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

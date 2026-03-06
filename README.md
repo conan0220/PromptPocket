@@ -1,4 +1,4 @@
-# PromptPocket
+﻿# PromptPocket
 
 這個專案用本機的 `Qwen3.5-9B-Q4_K_M.gguf` 模型搭配 `llama.cpp` 執行推論。
 
@@ -103,16 +103,16 @@ python .\ai_stack_start.py
 給我 1000 字的小作文，題目是「我的家鄉」
 ```
 
-4. 按 `生成`
+4. 按 `Enter` 直接生成
 5. 等待模型輸出完成
 6. 按 `貼上`
 7. 內容會回貼到你原本的輸入框
 
 補充：
 
-- `Ctrl+Enter`：在小視窗內送出生成
-- `Esc`：關閉小視窗
-- 打開小視窗的快捷鍵目前是 `Ctrl+Space`，不是 `Ctrl+Enter`
+- `Enter`：在小視窗內直接生成
+- `Shift+Enter`：在 Prompt 輸入框內換行
+- `Ctrl+Space`：打開或隱藏小視窗
 
 ## 直接在終端機聊天
 
@@ -154,9 +154,9 @@ python .\ai_stack_status.py
 
 注意：
 
-- `Ctrl+Space` 在部分 Windows 輸入法環境可能衝突；若有衝突，可把 [`ai_hotkey_app.py`](/c:/repos/local_ai/ai_hotkey_app.py) 裡的 `hotkey` 改成別組快捷鍵。
+- `Ctrl+Space` 在部分 Windows 輸入法環境可能衝突；若有衝突，可把 [`ai_hotkey_app.py`](/c:/repos/PromptPocket/ai_hotkey_app.py) 裡的 `hotkey` 改成別組快捷鍵。
 - `貼上` 依賴 Windows 焦點切換；大多數文字輸入框可正常工作，但少數高權限或特殊 UI 程式可能無法直接貼入。
-- 狀態資訊會寫在 [.runtime/ai_stack.json](/c:/repos/local_ai/.runtime/ai_stack.json)。
+- 狀態資訊會寫在 [.runtime/ai_stack.json](/c:/repos/PromptPocket/.runtime/ai_stack.json)。
 
 ## 備註
 
