@@ -1,4 +1,4 @@
-import atexit
+﻿import atexit
 import os
 import signal
 import subprocess
@@ -12,11 +12,12 @@ from ai_stack_common import (
     DEFAULT_HOTKEY,
     DEFAULT_MODEL_NAME,
     DEFAULT_SERVER_URL,
-    MODEL_PATH,
     clear_state,
     is_pid_running,
+    load_config,
     now_iso,
     resolve_llama_server,
+    resolve_model_path,
     resolve_pythonw,
     write_state,
 )
@@ -30,14 +31,16 @@ CREATE_NEW_PROCESS_GROUP = 0x00000200
 class StackManager:
     def __init__(self) -> None:
         self.server_process: subprocess.Popen | None = None
+        self.config = load_config()
+        self.model_path = resolve_model_path(self.config)
         self.state = {
             "manager_pid": os.getpid(),
             "server_pid": None,
             "started_at": now_iso(),
-            "server_url": DEFAULT_SERVER_URL,
-            "model": DEFAULT_MODEL_NAME,
-            "hotkey": DEFAULT_HOTKEY,
-            "model_path": str(MODEL_PATH),
+            "server_url": self.config.get("api_base_url", DEFAULT_SERVER_URL),
+            "model": self.config.get("model", DEFAULT_MODEL_NAME),
+            "hotkey": self.config.get("hotkey", DEFAULT_HOTKEY),
+            "model_path": str(self.model_path),
             "llama_server_path": None,
             "server_ready": False,
         }
@@ -54,13 +57,13 @@ class StackManager:
             [
                 llama_server,
                 "-m",
-                str(MODEL_PATH),
+                str(self.model_path),
                 "--ctx-size",
                 "16384",
                 "--port",
                 "8080",
             ],
-            cwd=str(MODEL_PATH.parent.parent),
+            cwd=str(self.model_path.parent.parent),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             creationflags=CREATE_NO_WINDOW,
@@ -71,7 +74,7 @@ class StackManager:
 
     def wait_until_ready(self, timeout_seconds: int = 45) -> bool:
         deadline = time.time() + timeout_seconds
-        url = f"{DEFAULT_SERVER_URL}/models"
+        url = f"{self.state['server_url']}/models"
         while time.time() < deadline:
             if self.server_process and self.server_process.poll() is not None:
                 return False
@@ -117,11 +120,12 @@ def run_foreground() -> int:
     manager.start_server()
     manager.wait_until_ready()
 
+    config_data = load_config()
     config = AppConfig(
-        base_url=DEFAULT_SERVER_URL,
-        api_key="EMPTY",
-        model=DEFAULT_MODEL_NAME,
-        hotkey=DEFAULT_HOTKEY,
+        base_url=config_data.get("api_base_url", DEFAULT_SERVER_URL),
+        api_key=config_data.get("api_key", "EMPTY"),
+        model=config_data.get("model", DEFAULT_MODEL_NAME),
+        hotkey=config_data.get("hotkey", DEFAULT_HOTKEY),
     )
     return run_app(config=config, show_on_start=False)
 
@@ -145,3 +149,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

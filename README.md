@@ -1,6 +1,6 @@
 ﻿# PromptPocket
 
-這個專案用本機的 `Qwen3.5-9B-Q4_K_M.gguf` 模型搭配 `llama.cpp` 執行推論。
+這個專案預設使用本機的 `Qwen3.5-9B-Q4_K_M.gguf` 模型，搭配 `llama.cpp` 執行推論。
 
 ## Quick Start
 
@@ -115,6 +115,114 @@ python .\ai_stack_start.py
 - `Ctrl+P`：貼上目前輸出結果
 - `Ctrl+Space`：打開或隱藏小視窗
 
+## 套用新模型
+
+### 設定模型名稱
+
+程式會讀取專案根目錄下的 `config.json`。
+
+例如：
+
+```json
+{
+  "model": "Qwen3.5-9B",
+  "model_path": "models/Qwen3.5-9B-Q4_K_M.gguf",
+  "hotkey": "ctrl+space",
+  "api_base_url": "http://localhost:8080/v1",
+  "api_key": "EMPTY"
+}
+```
+
+預設模型是 `Qwen3.5-9B`，對應的 GGUF 檔案是 `models/Qwen3.5-9B-Q4_K_M.gguf`。
+如果你要改模型，請同時修改 `config.json` 裡的 `model` 和 `model_path`。
+修改後請重新執行 `python .\ai_stack_start.py`。
+
+
+### 如果要下載新模型
+
+如果你要改用新的 GGUF 模型，建議先去 Hugging Face 網站找模型：
+
+- 模型首頁：https://huggingface.co/models
+- GGUF 作者頁常見例子：https://huggingface.co/bartowski
+
+流程如下。
+
+1. 先停止目前背景程式：
+
+```powershell
+python .\ai_stack_stop.py
+```
+
+2. 打開 Hugging Face 網站，搜尋你想要的模型。
+
+3. 進入模型頁面後，確認兩件事：
+
+- repo 名稱
+  - 例如：`bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF`
+- 檔案名稱
+  - 到模型頁面的 `Files and versions` 分頁找 GGUF 檔案
+  - 例如：`DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf`
+
+4. 根據頁面上的資訊，組出下載指令。
+
+如果你知道完整檔名，可以直接寫完整名稱：
+
+```powershell
+hf download bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF --include "DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf" --local-dir ./models
+```
+
+如果你只想抓某一種量化版本，也可以用萬用字元，例如：
+
+```powershell
+hf download bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF --include "*Q4_K_M.gguf" --local-dir ./models
+```
+
+這裡的意思是：
+
+- `bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF` 是 Hugging Face repo 名稱
+- `*Q4_K_M.gguf` 代表抓所有檔名尾巴符合 `Q4_K_M.gguf` 的 GGUF 檔案
+- `--local-dir ./models` 代表下載到專案的 `models/` 資料夾
+
+5. 確認下載後的 GGUF 檔案路徑，例如：
+
+```text
+models/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf
+```
+
+6. 修改 `config.json`：
+
+```json
+{
+  "model": "DeepSeek-R1-Distill-Qwen-7B",
+  "model_path": "models/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf",
+  "hotkey": "ctrl+space",
+  "api_base_url": "http://localhost:8080/v1",
+  "api_key": "EMPTY"
+}
+```
+
+7. 重新啟動背景程式：
+
+```powershell
+python .\ai_stack_start.py
+```
+
+8. 用下面指令確認目前載入的是不是新模型：
+
+```powershell
+python .\ai_stack_status.py
+```
+
+重點：
+
+- `model` 是 API / UI 顯示的模型名稱，可以自己命名
+- `model_path` 是 `llama-server` 實際載入的 GGUF 檔案路徑，必須和實際檔案一致
+- `Files and versions` 是最重要的地方，因為你要從那裡看 repo 裡到底有哪些 GGUF 檔名
+
+
+
+
+
 ## 直接在終端機聊天
 
 ```bash
@@ -164,6 +272,8 @@ python .\ai_stack_status.py
 - `Q4_K_M` 是量化後的 GGUF 模型，適合在本機資源有限的情況下使用。
 - `--ctx-size 16384` 會增加記憶體使用量，如果機器不夠大，可以改小。
 - 第一次載入模型可能會比較久，屬於正常現象。
+
+
 
 
 
