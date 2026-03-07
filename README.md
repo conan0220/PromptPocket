@@ -73,7 +73,36 @@ python -m pip install --upgrade pip
 python -m pip install openai PySide6 keyboard pyperclip pywin32 huggingface_hub hf_transfer
 ```
 
-### 6. 啟動背景 AI 工具
+### 6. 設定 config.json
+
+在專案根目錄建立或修改 `config.json`。
+
+如果你想先用較輕量、不特別強調 Thinking 的模型，可以用：
+
+```json
+{
+  "model": "Qwen3.5-9B",
+  "model_path": "models/Qwen3.5-9B-Q4_K_M.gguf",
+  "model_repo": "unsloth/Qwen3.5-9B-GGUF"
+}
+```
+
+如果你想用較強的 Thinking / reasoning 模型，可以用：
+
+```json
+{
+  "model": "gpt-oss-20b",
+  "model_path": "models/gpt-oss-20b-Q4_K_M.gguf",
+  "model_repo": "unsloth/gpt-oss-20b-GGUF"
+}
+```
+
+硬體建議：
+
+- `Qwen3.5-9B`：較適合一般電腦，只有 CPU 也比較有機會跑得動，啟動和回應通常會比較輕快
+- `gpt-oss-20b`：較適合記憶體 / 顯示卡資源更充足的機器；建議有獨立顯卡，RTX 5060 8GB 實測沒問題
+
+### 7. 啟動背景 AI 工具
 
 ```powershell
 python .\promptpocket.py --start
@@ -88,7 +117,7 @@ python .\promptpocket.py --start
 - 啟動背景 manager
 - 啟動快捷鍵小視窗
 
-### 7. 實際使用
+### 8. 實際使用
 
 1. 先切到任何一個可輸入文字的地方，例如瀏覽器輸入框、記事本、IDE 編輯器
 2. 按 `Ctrl+Space` 打開小視窗
