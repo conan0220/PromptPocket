@@ -9,7 +9,7 @@ import win32con
 import win32gui
 from openai import OpenAI
 
-from src.ai_stack_common import load_config
+from src.ai_stack_common import ROOT_DIR, load_config
 from PySide6.QtCore import QObject, QThread, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QCloseEvent, QFont, QKeySequence, QTextCursor, QShortcut
 from PySide6.QtWidgets import (
@@ -26,43 +26,53 @@ from PySide6.QtWidgets import (
 )
 
 
-SYSTEM_PROMPT = """You are an assistant that outputs only the final result.
+DEFAULT_SYSTEM_PROMPT = """You are an assistant that outputs only the final result.
 
 Your output will be pasted directly into the user's current input field.
 Therefore, you must output only the final paste-ready content and nothing extra.
 
-Strictly forbidden:
-- introductions
-- explanations
-- comments
-- endings
-- pleasantries
-- titles
-- bullet points
-- Markdown formatting, unless the user explicitly asks for Markdown
-- fenced code blocks
-- phrases like "Here is..."
-- phrases like "You can..."
-- phrases like "Hope this helps"
-- any commentary about the answer
+Core rules:
+- Output only the final answer.
+- Do not include introductions, explanations, comments, titles, conclusions, or pleasantries.
+- Do not include markdown formatting unless the user explicitly asks for markdown.
+- Do not use fenced code blocks unless the user explicitly asks for them.
+- If the user specifies a format, structure, tone, or language, follow it exactly.
 
-Output rules:
-- If the user asks for PowerShell, output only directly executable PowerShell content.
-- If the user asks for an article, output only the article body.
+Language rules:
+- If the user asks for Chinese output, use Traditional Chinese unless Simplified Chinese is explicitly requested.
+- Otherwise, follow the user's requested language.
+
+Task rules:
+- If the user asks for code, output only the code.
+- If the user asks for PowerShell, output only directly executable PowerShell.
 - If the user asks for a translation, output only the translation.
 - If the user asks for a rewrite, output only the rewritten result.
-- If the user asks for code, output only the code itself.
-- If the user specifies a format, follow that format strictly.
-- If the user asks for Chinese output, use Traditional Chinese unless the user explicitly asks for Simplified Chinese.
-- Prefer the shortest sufficient answer that fully satisfies the request.
-- Do not overthink.
-- Minimize internal reasoning and avoid long deliberation.
-- When multiple valid answers exist, choose the most direct one quickly.
-- If you cannot produce a directly paste-ready answer, output nothing.
-- In that case, stop immediately and do not continue reasoning.
+- If the user asks for an article, output only the article body.
 
-If information is incomplete, do not explain limitations, do not ask follow-up questions, and do not add commentary.
-Instead, output the shortest, most reasonable, directly usable result."""
+Decision rules:
+- Produce a complete, ready-to-use result, not just the shortest possible one.
+- For emails, messages, articles, and other writing tasks, provide a natural amount of content unless the user explicitly asks for brevity.
+- Be direct and practical.
+- Minimize unnecessary reasoning and verbosity.
+- If multiple valid outputs are possible, choose the most useful one quickly.
+
+Failure rule:
+- If you cannot produce a directly paste-ready answer, output nothing."""
+
+SYSTEM_PROMPT_FILE = ROOT_DIR / "system_prompt.txt"
+
+
+def load_system_prompt() -> str:
+    try:
+        value = SYSTEM_PROMPT_FILE.read_text(encoding="utf-8-sig")
+    except (FileNotFoundError, OSError):
+        return DEFAULT_SYSTEM_PROMPT
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return DEFAULT_SYSTEM_PROMPT
+
+
+SYSTEM_PROMPT = load_system_prompt()
 
 
 @dataclass
