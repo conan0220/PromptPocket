@@ -169,6 +169,19 @@ python .\promptpocket.py --status
 - `model_path` 是 `llama-server` 實際載入的 GGUF 檔案路徑，必須和實際檔案一致
 - `model_repo` 是 Hugging Face 的 repo 名稱；如果本機缺少 `model_path` 指向的檔案，`python .\promptpocket.py --start` 會用它自動下載
 
+### 調整 System Prompt
+
+系統提示詞放在專案根目錄下的 [system_prompt.txt](/c:/repos/PromptPocket/system_prompt.txt)。
+
+你可以直接用純文字編輯這個檔案，不需要處理 JSON 跳脫字元。
+修改完成後，重新執行：
+
+```powershell
+python .\promptpocket.py --start
+```
+
+如果 `system_prompt.txt` 不存在或內容讀取失敗，程式會自動退回內建的預設 prompt。
+
 ### 推薦模型
 
 下面是幾組適合本專案的 `config.json` 範例。
