@@ -219,8 +219,8 @@ class PromptWindow(QMainWindow):
 
         button_row = QHBoxLayout()
         button_row.addWidget(self.generate_button)
-        button_row.addWidget(self.cancel_button)
         button_row.addWidget(self.paste_button)
+        button_row.addWidget(self.cancel_button)
         button_row.addStretch()
         button_row.addWidget(self.close_button)
 
