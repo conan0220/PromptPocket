@@ -51,7 +51,7 @@ class StackManager:
     def start_server(self) -> None:
         llama_server = resolve_llama_server()
         if not self.model_path.exists():
-            raise FileNotFoundError(f"??????: {self.model_path}")
+            raise FileNotFoundError(f"找不到模型檔: {self.model_path}")
 
         self.server_process = subprocess.Popen(
             [

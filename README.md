@@ -103,13 +103,15 @@ python .\ai_stack_start.py
 給我 1000 字的小作文，題目是「我的家鄉」
 ```
 
-4. 按 `Enter` 直接生成
-5. 等待模型輸出完成
-6. 按 `貼上` 或按 `Ctrl+P`
-7. 內容會回貼到你原本的輸入框
+4. 如果想看思考過程，可以勾選 `Thinking`
+5. 按 `Enter` 直接生成
+6. 等待模型輸出完成
+7. 按 `貼上` 或按 `Ctrl+P`
+8. 內容會回貼到你原本的輸入框
 
 補充：
 
+- `Thinking`：顯示額外的 Thinking 輸出框
 - `Enter`：在小視窗內直接生成
 - `Shift+Enter`：在 Prompt 輸入框內換行
 - `Ctrl+P`：貼上目前輸出結果
@@ -155,43 +157,43 @@ python .\ai_stack_stop.py
 3. 進入模型頁面後，確認兩件事：
 
 - repo 名稱
-  - 例如：`bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF`
+  - 例如：`unsloth/gpt-oss-20b-GGUF`
 - 檔案名稱
   - 到模型頁面的 `Files and versions` 分頁找 GGUF 檔案
-  - 例如：`DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf`
+  - 例如：`gpt-oss-20b-Q4_K_M.gguf`
 
 4. 根據頁面上的資訊，組出下載指令。
 
 如果你知道完整檔名，可以直接寫完整名稱：
 
 ```powershell
-hf download bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF --include "DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf" --local-dir ./models
+hf download unsloth/gpt-oss-20b-GGUF --include "gpt-oss-20b-Q4_K_M.gguf" --local-dir ./models
 ```
 
 如果你只想抓某一種量化版本，也可以用萬用字元，例如：
 
 ```powershell
-hf download bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF --include "*Q4_K_M.gguf" --local-dir ./models
+hf download unsloth/gpt-oss-20b-GGUF --include "*Q4_K_M.gguf" --local-dir ./models
 ```
 
 這裡的意思是：
 
-- `bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF` 是 Hugging Face repo 名稱
+- `unsloth/gpt-oss-20b-GGUF` 是 Hugging Face repo 名稱
 - `*Q4_K_M.gguf` 代表抓所有檔名尾巴符合 `Q4_K_M.gguf` 的 GGUF 檔案
 - `--local-dir ./models` 代表下載到專案的 `models/` 資料夾
 
 5. 確認下載後的 GGUF 檔案路徑，例如：
 
 ```text
-models/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf
+models/gpt-oss-20b-Q4_K_M.gguf
 ```
 
 6. 修改 `config.json`：
 
 ```json
 {
-  "model": "DeepSeek-R1-Distill-Qwen-7B",
-  "model_path": "models/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf"
+  "model": "gpt-oss-9B",  
+  "model_path": "models/gpt-oss-20b-Q4_K_M.gguf"
 }
 ```
 

@@ -10,10 +10,11 @@ import win32gui
 from openai import OpenAI
 
 from ai_stack_common import load_config
-from PySide6.QtCore import QObject, QThread, Qt, Signal, Slot
-from PySide6.QtGui import QCloseEvent, QFont, QTextCursor
+from PySide6.QtCore import QObject, QThread, Qt, QTimer, Signal, Slot
+from PySide6.QtGui import QCloseEvent, QFont, QKeySequence, QTextCursor, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -25,36 +26,36 @@ from PySide6.QtWidgets import (
 )
 
 
-SYSTEM_PROMPT = """你是一個只輸出最終結果的助手。
+SYSTEM_PROMPT = """You are an assistant that outputs only the final result.
 
-你的輸出會被直接貼到使用者目前的輸入框中。
-因此你只能輸出可直接貼上的最終內容，不能輸出任何多餘文字。
+Your output will be pasted directly into the user's current input field.
+Therefore, you must output only the final paste-ready content and nothing extra.
 
-嚴格禁止輸出以下內容：
-- 前言
-- 解釋
-- 註解
-- 結尾
-- 客套話
-- 標題
-- 條列符號
-- Markdown 格式 (除非特別註記要寫 Markdown)
-- 三引號程式碼區塊
-- 「以下是...」
-- 「你可以...」
-- 「希望這對你有幫助」
-- 任何對答案的說明
+Strictly forbidden:
+- introductions
+- explanations
+- comments
+- endings
+- pleasantries
+- titles
+- bullet points
+- Markdown formatting, unless the user explicitly asks for Markdown
+- fenced code blocks
+- phrases like "Here is..."
+- phrases like "You can..."
+- phrases like "Hope this helps"
+- any commentary about the answer
 
-輸出規則：
-- 若要求 powershell，只輸出可直接執行的 powershell 內容。
-- 若要求文章，只輸出文章正文。
-- 若要求翻譯，只輸出翻譯結果。
-- 若要求改寫，只輸出改寫後內容。
-- 若要求程式碼，只輸出程式碼本身。
-- 若使用者指定格式，嚴格遵守該格式。
+Output rules:
+- If the user asks for PowerShell, output only directly executable PowerShell content.
+- If the user asks for an article, output only the article body.
+- If the user asks for a translation, output only the translation.
+- If the user asks for a rewrite, output only the rewritten result.
+- If the user asks for code, output only the code itself.
+- If the user specifies a format, follow that format strictly.
 
-如果資訊不足，不要解釋限制，不要反問，不要加說明。
-改為輸出最短、最合理、最可直接使用的結果。"""
+If information is incomplete, do not explain limitations, do not ask follow-up questions, and do not add commentary.
+Instead, output the shortest, most reasonable, directly usable result."""
 
 
 @dataclass
@@ -66,16 +67,19 @@ class AppConfig:
 
 
 class LlmWorker(QObject):
-    chunk = Signal(str)
+    answer_chunk = Signal(str)
+    thinking_chunk = Signal(str)
     started = Signal()
-    finished = Signal()
+    finished = Signal(bool)
     failed = Signal(str)
 
-    def __init__(self, client: OpenAI, model: str, prompt: str):
+    def __init__(self, client: OpenAI, model: str, prompt: str, enable_thinking: bool):
         super().__init__()
         self._client = client
         self._model = model
         self._prompt = prompt
+        self._enable_thinking = enable_thinking
+        self._received_reasoning = False
 
     @Slot()
     def run(self) -> None:
@@ -95,10 +99,14 @@ class LlmWorker(QObject):
             for part in stream:
                 if not part.choices:
                     continue
-                delta = part.choices[0].delta.content
-                if delta:
-                    self.chunk.emit(delta)
-            self.finished.emit()
+                delta = part.choices[0].delta
+                reasoning = getattr(delta, 'model_extra', {}).get('reasoning_content')
+                if self._enable_thinking and reasoning:
+                    self._received_reasoning = True
+                    self.thinking_chunk.emit(reasoning)
+                if delta.content:
+                    self.answer_chunk.emit(delta.content)
+            self.finished.emit(self._received_reasoning)
         except Exception as exc:  # noqa: BLE001
             self.failed.emit(str(exc))
 
@@ -122,7 +130,7 @@ class PromptWindow(QMainWindow):
             | Qt.WindowCloseButtonHint
             | Qt.WindowMinimizeButtonHint
         )
-        self.resize(760, 560)
+        self.resize(820, 700)
         self.request_show.connect(self.show_prompt_window)
         self.request_toggle.connect(self.toggle_prompt_window)
 
@@ -133,6 +141,17 @@ class PromptWindow(QMainWindow):
         self.prompt_input.setFixedHeight(110)
         self.prompt_input.installEventFilter(self)
 
+        self.thinking_checkbox = QCheckBox("Thinking")
+        self.thinking_checkbox.toggled.connect(self.on_thinking_toggled)
+
+        self.thinking_view = QTextEdit()
+        self.thinking_view.setReadOnly(True)
+        self.thinking_view.setPlaceholderText("勾選 Thinking 後，會顯示模型回傳的 reasoning_content")
+        self.thinking_view.setStyleSheet("color: #9aa0a6;")
+        self.thinking_view.setVisible(False)
+        self.thinking_label = QLabel("Thinking")
+        self.thinking_label.setVisible(False)
+
         self.output_view = QTextEdit()
         self.output_view.setReadOnly(True)
         self.output_view.setPlaceholderText("模型輸出會顯示在這裡")
@@ -140,30 +159,45 @@ class PromptWindow(QMainWindow):
         mono = QFont("Consolas")
         mono.setPointSize(11)
         self.prompt_input.setFont(mono)
+        self.thinking_view.setFont(mono)
         self.output_view.setFont(mono)
 
-        self.status_label = QLabel(
-            f"快捷鍵: {self.config.hotkey} | 模型: {self.config.model}"
-        )
+        self.model_label = QLabel(f"模型: {self.config.model}")
+        self.status_label = QLabel(f"快捷鍵: {self.config.hotkey}")
 
         self.generate_button = QPushButton("生成 (Enter)")
         self.paste_button = QPushButton("貼上 (Ctrl+P)")
         self.close_button = QPushButton("隱藏 (Ctrl+Space)")
 
         self.generate_button.clicked.connect(self.on_generate_clicked)
+        self.generate_button.setDefault(True)
+        self.generate_button.setAutoDefault(True)
         self.paste_button.clicked.connect(self.on_paste_clicked)
         self.close_button.clicked.connect(self.hide)
         self.paste_button.setEnabled(False)
 
+        self.generate_return_shortcut = QShortcut(QKeySequence(Qt.Key_Return), self)
+        self.generate_return_shortcut.activated.connect(self.on_generate_clicked)
+        self.generate_enter_shortcut = QShortcut(QKeySequence(Qt.Key_Enter), self)
+        self.generate_enter_shortcut.activated.connect(self.on_generate_clicked)
+
         button_row = QHBoxLayout()
         button_row.addWidget(self.generate_button)
         button_row.addWidget(self.paste_button)
+        button_row.addWidget(self.thinking_checkbox)
         button_row.addStretch()
         button_row.addWidget(self.close_button)
 
+        prompt_header_row = QHBoxLayout()
+        prompt_header_row.addWidget(QLabel("Prompt"))
+        prompt_header_row.addStretch()
+        prompt_header_row.addWidget(self.model_label)
+
         layout = QVBoxLayout()
-        layout.addWidget(QLabel("Prompt"))
+        layout.addLayout(prompt_header_row)
         layout.addWidget(self.prompt_input)
+        layout.addWidget(self.thinking_label)
+        layout.addWidget(self.thinking_view)
         layout.addWidget(QLabel("輸出"))
         layout.addWidget(self.output_view)
         layout.addWidget(self.status_label)
@@ -191,6 +225,13 @@ class PromptWindow(QMainWindow):
             return
         super().keyPressEvent(event)
 
+    @Slot(bool)
+    def on_thinking_toggled(self, checked: bool) -> None:
+        self.thinking_label.setVisible(checked)
+        self.thinking_view.setVisible(checked)
+        if not checked:
+            self.thinking_view.clear()
+
     @Slot()
     def show_prompt_window(self) -> None:
         foreground_hwnd = win32gui.GetForegroundWindow()
@@ -198,9 +239,27 @@ class PromptWindow(QMainWindow):
         if foreground_hwnd and foreground_hwnd != own_hwnd:
             self.last_foreground_hwnd = foreground_hwnd
         self.show()
+        self.focus_prompt_window()
+        QTimer.singleShot(0, self.focus_prompt_input)
+
+    @Slot()
+    def focus_prompt_window(self) -> None:
         self.raise_()
         self.activateWindow()
-        self.prompt_input.setFocus()
+        hwnd = int(self.winId()) if self.winId() else None
+        if not hwnd:
+            return
+        try:
+            if win32gui.IsIconic(hwnd):
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+            win32gui.SetForegroundWindow(hwnd)
+        except Exception:
+            pass
+
+    @Slot()
+    def focus_prompt_input(self) -> None:
+        self.focus_prompt_window()
+        self.prompt_input.setFocus(Qt.OtherFocusReason)
         self.prompt_input.selectAll()
 
     @Slot()
@@ -216,6 +275,7 @@ class PromptWindow(QMainWindow):
 
     def on_generate_clicked(self) -> None:
         if self.is_generating:
+            self.status_label.setText("生成中，請等待目前請求完成")
             return
 
         prompt = self.prompt_input.toPlainText().strip()
@@ -225,16 +285,24 @@ class PromptWindow(QMainWindow):
             return
 
         self.output_view.clear()
+        self.thinking_view.clear()
         self.paste_button.setEnabled(False)
         self.generate_button.setEnabled(False)
+        self.thinking_checkbox.setEnabled(False)
         self.status_label.setText("生成中...")
         self.is_generating = True
 
         self.worker_thread = QThread()
-        self.worker = LlmWorker(self.client, self.config.model, prompt)
+        self.worker = LlmWorker(
+            self.client,
+            self.config.model,
+            prompt,
+            self.thinking_checkbox.isChecked(),
+        )
         self.worker.moveToThread(self.worker_thread)
         self.worker_thread.started.connect(self.worker.run)
-        self.worker.chunk.connect(self.append_output)
+        self.worker.answer_chunk.connect(self.append_output)
+        self.worker.thinking_chunk.connect(self.append_thinking)
         self.worker.started.connect(self.on_generation_started)
         self.worker.finished.connect(self.on_generation_finished)
         self.worker.failed.connect(self.on_generation_failed)
@@ -245,7 +313,10 @@ class PromptWindow(QMainWindow):
 
     @Slot()
     def on_generation_started(self) -> None:
-        self.status_label.setText("模型正在輸出...")
+        if self.thinking_checkbox.isChecked():
+            self.status_label.setText("模型正在輸出 Thinking 與答案...")
+        else:
+            self.status_label.setText("模型正在輸出...")
 
     @Slot(str)
     def append_output(self, text: str) -> None:
@@ -255,10 +326,21 @@ class PromptWindow(QMainWindow):
         self.output_view.setTextCursor(cursor)
         self.output_view.ensureCursorVisible()
 
-    @Slot()
-    def on_generation_finished(self) -> None:
+    @Slot(str)
+    def append_thinking(self, text: str) -> None:
+        cursor = self.thinking_view.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        cursor.insertText(text)
+        self.thinking_view.setTextCursor(cursor)
+        self.thinking_view.ensureCursorVisible()
+
+    @Slot(bool)
+    def on_generation_finished(self, received_reasoning: bool) -> None:
         self.is_generating = False
         self.generate_button.setEnabled(True)
+        self.thinking_checkbox.setEnabled(True)
+        if self.thinking_checkbox.isChecked() and not received_reasoning:
+            self.thinking_view.setPlainText("This model did not return reasoning_content.")
         has_output = bool(self.output_view.toPlainText().strip())
         self.paste_button.setEnabled(has_output)
         self.status_label.setText("生成完成，可直接貼上")
@@ -267,6 +349,7 @@ class PromptWindow(QMainWindow):
     def on_generation_failed(self, message: str) -> None:
         self.is_generating = False
         self.generate_button.setEnabled(True)
+        self.thinking_checkbox.setEnabled(True)
         self.paste_button.setEnabled(False)
         self.status_label.setText("生成失敗")
         QMessageBox.critical(self, "模型呼叫失敗", message)
@@ -332,8 +415,5 @@ def main(config: AppConfig | None = None, show_on_start: bool = True) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-
 
 
