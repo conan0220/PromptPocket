@@ -4,17 +4,17 @@ import signal
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
 
 from src.ai_hotkey_app import AppConfig, main as run_app
 from src.ai_stack_common import (
     DEFAULT_HOTKEY,
     DEFAULT_MODEL_NAME,
+    DEFAULT_SERVER_READY_TIMEOUT_SECONDS,
     DEFAULT_SERVER_URL,
     ROOT_DIR,
     clear_state,
     ensure_model_available,
+    is_server_ready,
     is_pid_running,
     load_config,
     now_iso,
@@ -73,20 +73,19 @@ class StackManager:
         self.state["llama_server_path"] = llama_server
         self.write_state()
 
-    def wait_until_ready(self, timeout_seconds: int = 45) -> bool:
+    def wait_until_ready(
+        self,
+        timeout_seconds: int = DEFAULT_SERVER_READY_TIMEOUT_SECONDS,
+    ) -> bool:
         deadline = time.time() + timeout_seconds
-        url = f"{self.state['server_url']}/models"
         while time.time() < deadline:
             if self.server_process and self.server_process.poll() is not None:
                 return False
-            try:
-                with urllib.request.urlopen(url, timeout=2) as response:
-                    if 200 <= response.status < 300:
-                        self.state["server_ready"] = True
-                        self.write_state()
-                        return True
-            except (urllib.error.URLError, TimeoutError):
-                time.sleep(1)
+            if is_server_ready(self.state["server_url"]):
+                self.state["server_ready"] = True
+                self.write_state()
+                return True
+            time.sleep(1)
         return False
 
     def shutdown(self) -> None:

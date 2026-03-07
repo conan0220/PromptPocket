@@ -2,6 +2,8 @@
 import os
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -14,6 +16,7 @@ DEFAULT_MODEL_REPO = "unsloth/Qwen3.5-9B-GGUF"
 DEFAULT_SERVER_URL = "http://localhost:8080/v1"
 DEFAULT_MODEL_NAME = "Qwen3.5-9B"
 DEFAULT_HOTKEY = "ctrl+space"
+DEFAULT_SERVER_READY_TIMEOUT_SECONDS = 300
 DEFAULT_CONFIG = {
     "model": DEFAULT_MODEL_NAME,
     "model_path": str(DEFAULT_MODEL_PATH),
@@ -132,6 +135,17 @@ def read_state() -> dict | None:
 def write_state(data: dict) -> None:
     ensure_runtime_dir()
     PID_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def is_server_ready(server_url: str, request_timeout_seconds: int = 2) -> bool:
+    try:
+        with urllib.request.urlopen(
+            f"{server_url}/models",
+            timeout=request_timeout_seconds,
+        ) as response:
+            return 200 <= response.status < 300
+    except (urllib.error.URLError, TimeoutError):
+        return False
 
 
 def clear_state() -> None:

@@ -4,15 +4,18 @@ import subprocess
 import time
 
 from src.ai_stack_common import (
+    DEFAULT_SERVER_READY_TIMEOUT_SECONDS,
     PID_FILE,
     ROOT_DIR,
     clear_state,
     ensure_model_available,
+    is_server_ready,
     is_pid_running,
     kill_process_tree,
     load_config,
     read_state,
     resolve_pythonw,
+    write_state,
 )
 
 
@@ -116,8 +119,8 @@ def start_stack() -> int:
         return 1
 
     log(f"state file: {PID_FILE}")
-    log("waiting for server_ready=true")
-    deadline = time.time() + 90
+    log("waiting for server API to become ready")
+    deadline = time.time() + DEFAULT_SERVER_READY_TIMEOUT_SECONDS
     while time.time() < deadline:
         state = read_state()
         if not state:
@@ -130,10 +133,14 @@ def start_stack() -> int:
 
         current_manager_pid = state.get("manager_pid")
         server_pid = state.get("server_pid")
-        server_ready = state.get("server_ready") is True
+        server_url = state.get("server_url") or "unknown"
+        server_ready = is_server_ready(server_url) if server_url != "unknown" else False
         model_name = state.get("model") or "unknown"
 
         if server_ready:
+            if state.get("server_ready") is not True:
+                state["server_ready"] = True
+                write_state(state)
             log(f"server is ready for model={model_name} server_pid={server_pid}")
             return 0
 
@@ -147,11 +154,12 @@ def start_stack() -> int:
 
         log(
             f"still waiting: model={model_name} manager_pid={current_manager_pid} "
-            f"server_pid={server_pid} server_ready={state.get('server_ready')}"
+            f"server_pid={server_pid} server_url={server_url} "
+            f"server_ready={state.get('server_ready')}"
         )
         time.sleep(1)
 
-    log("timed out waiting for server_ready=true")
+    log("timed out waiting for server API to become ready")
     return 1
 
 
