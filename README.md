@@ -22,7 +22,19 @@ llama-server --version
 llama-cli --version
 ```
 
-### 2. 建立 Python venv
+### 2. 確認已安裝 Python
+
+請先確認電腦已安裝 Python，並且 `python` 指令可用。
+
+可先在專案根目錄或任意 terminal 視窗執行：
+
+```powershell
+python --version
+```
+
+如果能看到版本號，例如 `Python 3.11.x`，再繼續下一步。
+
+### 3. 建立 Python venv
 
 在專案根目錄執行：
 
@@ -30,7 +42,7 @@ llama-cli --version
 python -m venv .venv
 ```
 
-### 3. 進入 venv
+### 4. 進入 venv
 
 依你使用的 terminal 不同，啟用方式如下。
 
@@ -46,22 +58,22 @@ Command Prompt (`cmd.exe`):
 .\.venv\Scripts\activate.bat
 ```
 
-Git Bash:
+macOS / Linux:
 
 ```bash
-source .venv/Scripts/activate
+source .venv/bin/activate
 ```
 
 啟用後，終端機前面通常會出現 `(.venv)`。
 
-### 4. 安裝 Python 套件
+### 5. 安裝 Python 套件
 
 ```powershell
 python -m pip install --upgrade pip
 python -m pip install openai PySide6 keyboard pyperclip pywin32 huggingface_hub hf_transfer
 ```
 
-### 5. 下載模型
+### 6. 下載模型
 
 下載模型到 `./models`：
 
@@ -75,7 +87,7 @@ hf download unsloth/Qwen3.5-9B-GGUF --include "Qwen3.5-9B-Q4_K_M.gguf" --local-d
 ./models/Qwen3.5-9B-Q4_K_M.gguf
 ```
 
-### 6. 啟動背景 AI 工具
+### 7. 啟動背景 AI 工具
 
 ```powershell
 python .\ai_stack_start.py
@@ -87,7 +99,7 @@ python .\ai_stack_start.py
 - 啟動背景 manager
 - 啟動快捷鍵小視窗
 
-### 7. 實際使用
+### 8. 實際使用
 
 1. 先切到任何一個可輸入文字的地方，例如瀏覽器輸入框、記事本、IDE 編輯器
 2. 按 `Ctrl+Space` 打開小視窗
