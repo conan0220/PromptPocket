@@ -157,7 +157,7 @@ class PromptWindow(QMainWindow):
         self.prompt_input.setMinimumHeight(140)
         self.prompt_input.installEventFilter(self)
 
-        self.thinking_checkbox = QCheckBox("Thinking")
+        self.thinking_checkbox = QCheckBox("Show Thinking")
         self.thinking_checkbox.toggled.connect(self.on_thinking_toggled)
 
         self.thinking_view = QTextEdit()
@@ -457,6 +457,12 @@ class PromptWindow(QMainWindow):
 
     @Slot()
     def toggle_prompt_window(self) -> None:
+        if self.is_generating:
+            self.show()
+            self.focus_prompt_window()
+            QTimer.singleShot(0, self.focus_prompt_input)
+            self.set_status("生成中，請等待目前請求完成或取消", "warning")
+            return
         if self.isVisible():
             self.hide()
             return
@@ -482,6 +488,7 @@ class PromptWindow(QMainWindow):
         self.paste_button.setEnabled(False)
         self.generate_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
+        self.close_button.setEnabled(False)
         self.thinking_checkbox.setEnabled(False)
         self.set_status("生成中...", "working")
         self.is_generating = True
@@ -543,6 +550,7 @@ class PromptWindow(QMainWindow):
         self.is_generating = False
         self.generate_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
+        self.close_button.setEnabled(True)
         self.thinking_checkbox.setEnabled(True)
         if self.thinking_checkbox.isChecked() and not received_reasoning:
             self.thinking_view.setPlainText("This model did not return reasoning_content.")
@@ -555,6 +563,7 @@ class PromptWindow(QMainWindow):
         self.is_generating = False
         self.generate_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
+        self.close_button.setEnabled(True)
         self.thinking_checkbox.setEnabled(True)
         has_output = bool(self.output_view.toPlainText().strip())
         self.paste_button.setEnabled(has_output)
@@ -565,6 +574,7 @@ class PromptWindow(QMainWindow):
         self.is_generating = False
         self.generate_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
+        self.close_button.setEnabled(True)
         self.thinking_checkbox.setEnabled(True)
         self.paste_button.setEnabled(False)
         self.set_status("生成失敗", "error")
