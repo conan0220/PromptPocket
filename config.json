@@ -1,4 +1,5 @@
 ﻿{
   "model": "Qwen3.5-9B",
-  "model_path": "models/Qwen3.5-9B-Q4_K_M.gguf"
+  "model_path": "models/Qwen3.5-9B-Q4_K_M.gguf",
+  "model_repo": "unsloth/Qwen3.5-9B-GGUF"
 }

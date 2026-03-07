@@ -5,18 +5,19 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-
-ROOT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = Path(__file__).resolve().parent.parent
 RUNTIME_DIR = ROOT_DIR / ".runtime"
 PID_FILE = RUNTIME_DIR / "ai_stack.json"
 CONFIG_FILE = ROOT_DIR / "config.json"
 DEFAULT_MODEL_PATH = ROOT_DIR / "models" / "Qwen3.5-9B-Q4_K_M.gguf"
+DEFAULT_MODEL_REPO = "unsloth/Qwen3.5-9B-GGUF"
 DEFAULT_SERVER_URL = "http://localhost:8080/v1"
 DEFAULT_MODEL_NAME = "Qwen3.5-9B"
 DEFAULT_HOTKEY = "ctrl+space"
 DEFAULT_CONFIG = {
     "model": DEFAULT_MODEL_NAME,
     "model_path": str(DEFAULT_MODEL_PATH),
+    "model_repo": DEFAULT_MODEL_REPO,
 }
 
 
@@ -52,6 +53,71 @@ def resolve_model_path(config: dict | None = None) -> Path:
     if not candidate.is_absolute():
         candidate = ROOT_DIR / candidate
     return candidate.resolve()
+
+
+def ensure_model_available(config: dict | None = None, log=None) -> Path:
+    config = config or load_config()
+    model_path = resolve_model_path(config)
+    if model_path.exists():
+        return model_path
+
+    model_repo = str(config.get("model_repo", "")).strip()
+    if not model_repo:
+        raise FileNotFoundError(
+            "找不到模型檔，且 config.json 缺少 model_repo。"
+            f" model={config.get('model')} model_path={config.get('model_path')}"
+        )
+
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+    if log is not None:
+        log(
+            "model file not found, downloading from Hugging Face: "
+            f"repo={model_repo} file={model_path.name}"
+        )
+    try:
+        try:
+            from huggingface_hub import hf_hub_download
+
+            hf_hub_download(
+                repo_id=model_repo,
+                filename=model_path.name,
+                local_dir=str(model_path.parent),
+            )
+        except ModuleNotFoundError:
+            result = subprocess.run(
+                [
+                    "hf",
+                    "download",
+                    model_repo,
+                    "--include",
+                    model_path.name,
+                    "--local-dir",
+                    str(model_path.parent),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode != 0:
+                detail = result.stderr.strip() or result.stdout.strip()
+                raise RuntimeError(
+                    "huggingface_hub 未安裝，且 hf download 也無法使用。"
+                    f" detail={detail}"
+                ) from None
+    except Exception as exc:  # noqa: BLE001
+        raise FileNotFoundError(
+            "無法根據 config.json 下載模型。"
+            f" model={config.get('model')} model_repo={model_repo} "
+            f"model_path={config.get('model_path')} error={exc}"
+        ) from exc
+
+    if not model_path.exists():
+        raise FileNotFoundError(
+            "模型下載流程已完成，但找不到下載後的檔案。"
+            f" model={config.get('model')} model_repo={model_repo} "
+            f"model_path={config.get('model_path')}"
+        )
+    return model_path
 
 
 def read_state() -> dict | None:

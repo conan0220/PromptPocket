@@ -9,7 +9,7 @@ import win32con
 import win32gui
 from openai import OpenAI
 
-from ai_stack_common import load_config
+from src.ai_stack_common import load_config
 from PySide6.QtCore import QObject, QThread, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QCloseEvent, QFont, QKeySequence, QTextCursor, QShortcut
 from PySide6.QtWidgets import (
@@ -104,8 +104,8 @@ class LlmWorker(QObject):
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": self._prompt},
                 ],
-                temperature=0.4,
-                top_p=0.9,
+                temperature=0.2,
+                top_p=0.75,
                 stream=True,
             )
             for part in stream:
@@ -144,8 +144,7 @@ class PromptWindow(QMainWindow):
 
         self.setWindowTitle("Local AI Prompt")
         self.setWindowFlags(
-            Qt.WindowStaysOnTopHint
-            | Qt.WindowCloseButtonHint
+            Qt.WindowCloseButtonHint
             | Qt.WindowMinimizeButtonHint
         )
         self.resize(860, 760)

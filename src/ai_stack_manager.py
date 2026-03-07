@@ -7,17 +7,18 @@ import time
 import urllib.error
 import urllib.request
 
-from ai_hotkey_app import AppConfig, main as run_app
-from ai_stack_common import (
+from src.ai_hotkey_app import AppConfig, main as run_app
+from src.ai_stack_common import (
     DEFAULT_HOTKEY,
     DEFAULT_MODEL_NAME,
     DEFAULT_SERVER_URL,
+    ROOT_DIR,
     clear_state,
+    ensure_model_available,
     is_pid_running,
     load_config,
     now_iso,
     resolve_llama_server,
-    resolve_model_path,
     resolve_pythonw,
     write_state,
 )
@@ -32,7 +33,7 @@ class StackManager:
     def __init__(self) -> None:
         self.server_process: subprocess.Popen | None = None
         self.config = load_config()
-        self.model_path = resolve_model_path(self.config)
+        self.model_path = ensure_model_available(self.config)
         self.state = {
             "manager_pid": os.getpid(),
             "server_pid": None,
@@ -134,8 +135,8 @@ def main() -> int:
     if "--foreground" not in sys.argv:
         pythonw = resolve_pythonw()
         subprocess.Popen(
-            [pythonw, __file__, "--foreground"],
-            cwd=os.path.dirname(__file__),
+            [pythonw, "-m", "src.ai_stack_manager", "--foreground"],
+            cwd=str(ROOT_DIR),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,

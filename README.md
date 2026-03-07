@@ -73,33 +73,22 @@ python -m pip install --upgrade pip
 python -m pip install openai PySide6 keyboard pyperclip pywin32 huggingface_hub hf_transfer
 ```
 
-### 6. 下載模型
-
-下載模型到 `./models`：
+### 6. 啟動背景 AI 工具
 
 ```powershell
-hf download unsloth/Qwen3.5-9B-GGUF --include "Qwen3.5-9B-Q4_K_M.gguf" --local-dir ./models
-```
-
-下載完成後，模型檔應該會在：
-
-```text
-./models/Qwen3.5-9B-Q4_K_M.gguf
-```
-
-### 7. 啟動背景 AI 工具
-
-```powershell
-python .\ai_stack_start.py
+python .\promptpocket.py --start
 ```
 
 這個指令會自動：
 
+- 讀取 `config.json`
+- 檢查 `model_path` 指向的模型檔是否存在
+- 若本機缺模型，根據 `model_repo` 自動從 Hugging Face 下載
 - 啟動 `llama-server`
 - 啟動背景 manager
 - 啟動快捷鍵小視窗
 
-### 8. 實際使用
+### 7. 實際使用
 
 1. 先切到任何一個可輸入文字的地方，例如瀏覽器輸入框、記事本、IDE 編輯器
 2. 按 `Ctrl+Space` 打開小視窗
@@ -140,92 +129,124 @@ python .\ai_stack_start.py
 ```json
 {
   "model": "Qwen3.5-9B",
-  "model_path": "models/Qwen3.5-9B-Q4_K_M.gguf"
+  "model_path": "models/Qwen3.5-9B-Q4_K_M.gguf",
+  "model_repo": "unsloth/Qwen3.5-9B-GGUF"
 }
 ```
 
 預設模型是 `Qwen3.5-9B`，對應的 GGUF 檔案是 `models/Qwen3.5-9B-Q4_K_M.gguf`。
-如果你要改模型，請同時修改 `config.json` 裡的 `model` 和 `model_path`。
-修改後請重新執行 `python .\ai_stack_start.py`。
+如果你要改模型，請同時修改 `config.json` 裡的 `model`、`model_path` 和 `model_repo`。
+修改後請重新執行 `python .\promptpocket.py --start`。
 
 
-### 如果要下載新模型
+### 切換新模型
 
-如果你要改用新的 GGUF 模型，建議先去 Hugging Face 網站找模型：
-
-- 模型首頁：https://huggingface.co/models
-- GGUF 作者頁常見例子：https://huggingface.co/bartowski
-
-流程如下。
-
-1. 先停止目前背景程式：
-
-```powershell
-python .\ai_stack_stop.py
-```
-
-2. 打開 Hugging Face 網站，搜尋你想要的模型。
-
-3. 進入模型頁面後，確認兩件事：
-
-- repo 名稱
-  - 例如：`unsloth/gpt-oss-20b-GGUF`
-- 檔案名稱
-  - 到模型頁面的 `Files and versions` 分頁找 GGUF 檔案
-  - 例如：`gpt-oss-20b-Q4_K_M.gguf`
-
-4. 根據頁面上的資訊，組出下載指令。
-
-如果你知道完整檔名，可以直接寫完整名稱：
-
-```powershell
-hf download unsloth/gpt-oss-20b-GGUF --include "gpt-oss-20b-Q4_K_M.gguf" --local-dir ./models
-```
-
-如果你只想抓某一種量化版本，也可以用萬用字元，例如：
-
-```powershell
-hf download unsloth/gpt-oss-20b-GGUF --include "*Q4_K_M.gguf" --local-dir ./models
-```
-
-這裡的意思是：
-
-- `unsloth/gpt-oss-20b-GGUF` 是 Hugging Face repo 名稱
-- `*Q4_K_M.gguf` 代表抓所有檔名尾巴符合 `Q4_K_M.gguf` 的 GGUF 檔案
-- `--local-dir ./models` 代表下載到專案的 `models/` 資料夾
-
-5. 確認下載後的 GGUF 檔案路徑，例如：
-
-```text
-models/gpt-oss-20b-Q4_K_M.gguf
-```
-
-6. 修改 `config.json`：
+修改 `config.json`：
 
 ```json
 {
-  "model": "gpt-oss-9B",  
-  "model_path": "models/gpt-oss-20b-Q4_K_M.gguf"
+  "model": "gpt-oss-9B",
+  "model_path": "models/gpt-oss-20b-Q4_K_M.gguf",
+  "model_repo": "unsloth/gpt-oss-20b-GGUF"
 }
 ```
 
-7. 重新啟動背景程式：
+然後重新啟動背景程式：
 
 ```powershell
-python .\ai_stack_start.py
+python .\promptpocket.py --start
 ```
 
-8. 用下面指令確認目前載入的是不是新模型：
+如果你要確認目前載入的是不是新模型：
 
 ```powershell
-python .\ai_stack_status.py
+python .\promptpocket.py --status
 ```
 
 重點：
 
 - `model` 是 API / UI 顯示的模型名稱，可以自己命名
 - `model_path` 是 `llama-server` 實際載入的 GGUF 檔案路徑，必須和實際檔案一致
-- `Files and versions` 是最重要的地方，因為你要從那裡看 repo 裡到底有哪些 GGUF 檔名
+- `model_repo` 是 Hugging Face 的 repo 名稱；如果本機缺少 `model_path` 指向的檔案，`python .\promptpocket.py --start` 會用它自動下載
+
+### 推薦模型
+
+下面是幾組適合本專案的 `config.json` 範例。
+
+#### 1. gpt-oss-20b
+
+適合：想要接近 20B 規模、可在本地跑的推理模型
+
+```json
+{
+  "model": "gpt-oss-20b",
+  "model_path": "models/gpt-oss-20b-Q4_K_M.gguf",
+  "model_repo": "unsloth/gpt-oss-20b-GGUF"
+}
+```
+
+- 官方模型頁：https://huggingface.co/openai/gpt-oss-20b
+- GGUF repo：https://huggingface.co/unsloth/gpt-oss-20b-GGUF
+
+#### 2. DeepSeek-R1-Distill-Qwen-7B
+
+適合：資源較少、想要保留推理能力
+
+```json
+{
+  "model": "DeepSeek-R1-Distill-Qwen-7B",
+  "model_path": "models/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf",
+  "model_repo": "bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF"
+}
+```
+
+- 官方模型頁：https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+- GGUF repo：https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF
+
+#### 3. DeepSeek-R1-Distill-Qwen-14B
+
+適合：目前這個專案的平衡選擇，推理能力和資源需求比較折衷
+
+```json
+{
+  "model": "DeepSeek-R1-Distill-Qwen-14B",
+  "model_path": "models/DeepSeek-R1-Distill-Qwen-14B-Q4_K_M.gguf",
+  "model_repo": "bartowski/DeepSeek-R1-Distill-Qwen-14B-GGUF"
+}
+```
+
+- 官方模型頁：https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-14B
+- GGUF repo：https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-14B-GGUF
+
+#### 4. Qwen3-14B
+
+適合：泛用、穩定、多語言能力不錯，速度通常比 reasoning 模型好一些
+
+```json
+{
+  "model": "Qwen3-14B",
+  "model_path": "models/qwen3-14b-q4_k_m.gguf",
+  "model_repo": "Qwen/Qwen3-14B-GGUF"
+}
+```
+
+- 官方模型頁：https://huggingface.co/Qwen/Qwen3-14B
+- GGUF repo：https://huggingface.co/Qwen/Qwen3-14B-GGUF
+
+#### 5. QwQ-32B
+
+適合：想要更強的 reasoning / thinking，且機器資源足夠
+
+```json
+{
+  "model": "QwQ-32B",
+  "model_path": "models/qwq-32b-q4_k_m.gguf",
+  "model_repo": "Qwen/QwQ-32B-GGUF"
+}
+```
+
+- 官方模型頁：https://huggingface.co/Qwen/QwQ-32B
+- GGUF repo：https://huggingface.co/Qwen/QwQ-32B-GGUF
 
 
 
@@ -254,24 +275,24 @@ http://localhost:8080/v1
 ### 啟動或重啟背景程式
 
 ```powershell
-python .\ai_stack_start.py
+python .\promptpocket.py --start
 ```
 
 ### 停止背景程式
 
 ```powershell
-python .\ai_stack_stop.py
+python .\promptpocket.py --stop
 ```
 
 ### 查詢目前狀態
 
 ```powershell
-python .\ai_stack_status.py
+python .\promptpocket.py --status
 ```
 
 注意：
 
-- `Ctrl+Space` 在部分 Windows 輸入法環境可能衝突；若有衝突，可把 [`ai_hotkey_app.py`](/c:/repos/PromptPocket/ai_hotkey_app.py) 裡的 `hotkey` 改成別組快捷鍵。
+- `Ctrl+Space` 在部分 Windows 輸入法環境可能衝突；若有衝突，可把 [`src/ai_hotkey_app.py`](/c:/repos/PromptPocket/src/ai_hotkey_app.py) 裡的 `hotkey` 改成別組快捷鍵。
 - `貼上` 依賴 Windows 焦點切換；大多數文字輸入框可正常工作，但少數高權限或特殊 UI 程式可能無法直接貼入。
 - 狀態資訊會寫在 [.runtime/ai_stack.json](/c:/repos/PromptPocket/.runtime/ai_stack.json)。
 
