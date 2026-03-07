@@ -2,6 +2,7 @@ import subprocess
 import time
 from pathlib import Path
 
+from ai_stack_stop import main as stop_main
 from ai_stack_common import (
     PID_FILE,
     ROOT_DIR,
@@ -16,23 +17,9 @@ CREATE_NEW_PROCESS_GROUP = 0x00000200
 CREATE_NO_WINDOW = 0x08000000
 
 
-def stop_existing() -> None:
-    state = read_state()
-    if not state:
-        return
-
-    manager_pid = state.get("manager_pid")
-    if is_pid_running(manager_pid):
-        subprocess.run(
-            ["taskkill", "/PID", str(manager_pid), "/T", "/F"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-
 def main() -> int:
-    stop_existing()
+    stop_main()
+    time.sleep(0.3)
 
     pythonw = resolve_pythonw()
     manager_script = Path(ROOT_DIR / "ai_stack_manager.py")

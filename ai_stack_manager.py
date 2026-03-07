@@ -37,9 +37,9 @@ class StackManager:
             "manager_pid": os.getpid(),
             "server_pid": None,
             "started_at": now_iso(),
-            "server_url": self.config.get("api_base_url", DEFAULT_SERVER_URL),
+            "server_url": DEFAULT_SERVER_URL,
             "model": self.config.get("model", DEFAULT_MODEL_NAME),
-            "hotkey": self.config.get("hotkey", DEFAULT_HOTKEY),
+            "hotkey": DEFAULT_HOTKEY,
             "model_path": str(self.model_path),
             "llama_server_path": None,
             "server_ready": False,
@@ -50,8 +50,8 @@ class StackManager:
 
     def start_server(self) -> None:
         llama_server = resolve_llama_server()
-        if not MODEL_PATH.exists():
-            raise FileNotFoundError(f"找不到模型檔: {MODEL_PATH}")
+        if not self.model_path.exists():
+            raise FileNotFoundError(f"??????: {self.model_path}")
 
         self.server_process = subprocess.Popen(
             [
@@ -122,10 +122,10 @@ def run_foreground() -> int:
 
     config_data = load_config()
     config = AppConfig(
-        base_url=config_data.get("api_base_url", DEFAULT_SERVER_URL),
-        api_key=config_data.get("api_key", "EMPTY"),
+        base_url=DEFAULT_SERVER_URL,
+        api_key="EMPTY",
         model=config_data.get("model", DEFAULT_MODEL_NAME),
-        hotkey=config_data.get("hotkey", DEFAULT_HOTKEY),
+        hotkey=DEFAULT_HOTKEY,
     )
     return run_app(config=config, show_on_start=False)
 
@@ -149,4 +149,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 

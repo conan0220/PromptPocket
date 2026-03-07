@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import subprocess
 import sys
@@ -14,13 +14,9 @@ DEFAULT_MODEL_PATH = ROOT_DIR / "models" / "Qwen3.5-9B-Q4_K_M.gguf"
 DEFAULT_SERVER_URL = "http://localhost:8080/v1"
 DEFAULT_MODEL_NAME = "Qwen3.5-9B"
 DEFAULT_HOTKEY = "ctrl+space"
-DEFAULT_API_KEY = "EMPTY"
 DEFAULT_CONFIG = {
     "model": DEFAULT_MODEL_NAME,
     "model_path": str(DEFAULT_MODEL_PATH),
-    "hotkey": DEFAULT_HOTKEY,
-    "api_base_url": DEFAULT_SERVER_URL,
-    "api_key": DEFAULT_API_KEY,
 }
 
 
@@ -37,7 +33,7 @@ def load_config() -> dict:
     if not CONFIG_FILE.exists():
         return config
     try:
-        raw = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+        raw = json.loads(CONFIG_FILE.read_text(encoding="utf-8-sig"))
     except (json.JSONDecodeError, OSError):
         return config
     if not isinstance(raw, dict):
@@ -138,3 +134,5 @@ def resolve_llama_server() -> str:
     raise FileNotFoundError(
         "找不到 llama-server。請把它加入 PATH，或設定 LLAMA_SERVER_PATH。"
     )
+
+

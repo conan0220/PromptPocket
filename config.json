@@ -1,7 +1,4 @@
 ﻿{
   "model": "Qwen3.5-9B",
-  "model_path": "models/Qwen3.5-9B-Q4_K_M.gguf",
-  "hotkey": "ctrl+space",
-  "api_base_url": "http://localhost:8080/v1",
-  "api_key": "EMPTY"
+  "model_path": "models/Qwen3.5-9B-Q4_K_M.gguf"
 }

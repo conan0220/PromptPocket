@@ -319,10 +319,7 @@ def main(config: AppConfig | None = None, show_on_start: bool = True) -> int:
     if config is None:
         config_data = load_config()
         config = AppConfig(
-            base_url=config_data.get("api_base_url", AppConfig.base_url),
-            api_key=config_data.get("api_key", AppConfig.api_key),
             model=config_data.get("model", AppConfig.model),
-            hotkey=config_data.get("hotkey", AppConfig.hotkey),
         )
     window = PromptWindow(config)
     register_hotkey(window, config.hotkey)

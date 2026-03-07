@@ -126,10 +126,7 @@ python .\ai_stack_start.py
 ```json
 {
   "model": "Qwen3.5-9B",
-  "model_path": "models/Qwen3.5-9B-Q4_K_M.gguf",
-  "hotkey": "ctrl+space",
-  "api_base_url": "http://localhost:8080/v1",
-  "api_key": "EMPTY"
+  "model_path": "models/Qwen3.5-9B-Q4_K_M.gguf"
 }
 ```
 
@@ -194,10 +191,7 @@ models/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf
 ```json
 {
   "model": "DeepSeek-R1-Distill-Qwen-7B",
-  "model_path": "models/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf",
-  "hotkey": "ctrl+space",
-  "api_base_url": "http://localhost:8080/v1",
-  "api_key": "EMPTY"
+  "model_path": "models/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf"
 }
 ```
 
